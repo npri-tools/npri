@@ -11,6 +11,8 @@ In this first example, we will search for information about a place using a geog
 ```
 this_place = npri.Places(near=[43.25, -80])
 this_place.data
+```
+
 | C10_RATE_TOTAL | total_co_2022 | total_so2_2022 | total_ammonia_2022 | total_pm10_2022 | total_pm25_2022 | total_no2_2022 | total_voc_2022 | releases_to_air_2022 | sum_years | ... | NumberOfSubstances_Percentile | NumberOfMedia | NumberOfMeasureMethods | NumberOfVOCs_Distinct | NumberOfVOCs | NumberOfPAHs | Substances | CAS | ProvinceID | geometry |                                                   |
 |---------------:|--------------:|---------------:|-------------------:|----------------:|----------------:|---------------:|---------------:|---------------------:|----------:|----:|------------------------------:|--------------:|-----------------------:|----------------------:|-------------:|-------------:|-----------:|----:|-----------:|---------:|---------------------------------------------------|
 |          dauid |               |                |                    |                 |                 |                |                |                      |           |     |                               |               |                        |                       |              |              |            |     |            |          |                                                   |
@@ -19,6 +21,5 @@ this_place.data
 |    35250031    |           0.0 |            NaN |                NaN |             NaN |             NaN |            NaN |            NaN |                  NaN |       NaN | NaN |                           ... |           NaN |                    NaN |                   NaN |          NaN |          NaN |        NaN | NaN |        NaN |       35 | MULTIPOLYGON (((7191376.191 880328.200, 719150... |
 |    35250032    |          11.8 |            NaN |                NaN |             NaN |             NaN |            NaN |            NaN |                  NaN |       NaN | NaN |                           ... |           NaN |                    NaN |                   NaN |          NaN |          NaN |        NaN | NaN |        NaN |       35 | MULTIPOLYGON (((7188368.631 878414.126, 718828... |
 |    35250033    |           9.5 |            NaN |                NaN |             NaN |             NaN |            NaN |            NaN |                  NaN |       NaN | NaN |                           ... |           NaN |                    NaN |                   NaN |          NaN |          NaN |        NaN | NaN |        NaN |       35 | MULTIPOLYGON (((7188267.523 877771.920, 718762... |
-```
 
 Many of the values here are `NaN` indicating that the dissemination area saw none of these pollutants (CO, SO2, and other "criteria air contaminants") reporting being released to the air in 2022. This is not to say that the dissemination area does not experience air pollution, but simply that there are no NPRI-reporting facilities in it that reported releases of those pollutants in 2022.
