@@ -29,7 +29,7 @@ def get_data(sql, index = None):
     if index is not None:
       data.set_index(index, inplace=True)
   except:
-    print("Error: couldn't get the data...")
+    print("Error: We are unable to get the data. This may be because we've temporarily turned off the database to save money. If you'd like to keep using this tool, email enost[at]uoguelph[dot]ca to let us know!")
 
   return data
 
