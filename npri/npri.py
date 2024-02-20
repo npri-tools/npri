@@ -39,7 +39,7 @@ class Maps():
   A class that provides basic functions for classes with mappable data (Facilities, Places)
   """
 
-  def add_layer(self, other_data, this_map): #DELETEorFIX
+  def add_layer(self, other_data, this_map):
     """
     A helper function that adds layers (from other_data) to a folium.Map object, which it returns
     """
@@ -54,6 +54,71 @@ class Maps():
     except:
       print("Are you sure the other data are mappable geodataframes?")
 
+  def get_featuregroups(self, attribute):
+    """
+    Takes a geodataframe and creates a list of markers or polygons to be added to a Feature Group
+    """
+
+    features = []
+
+    geom_type = self.working_data.geometry.geom_type.mode()[0] # Use the most common geometry
+
+    if geom_type == "Point":
+      # Markers...
+      self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False,        duplicates="drop")
+      scale = {0: 8,1:12, 2: 16, 3: 24} # First quartile = size 8 circles, etc.
+      # Create a clickable marker for each facility
+      # Temporarily project self.working_data for mapping purposes
+      self.working_data.to_crs(4326, inplace=True)
+      for index, row in self.working_data.iterrows():
+        try:
+          r = scale[row["quantile"]]
+          fill_color = "orange"
+        except KeyError:
+          r = 1
+          fill_color = "black"
+        features.append(
+          folium.CircleMarker(
+            location = [row["geometry"].y, row["geometry"].x],
+            popup = attribute+": "+str(row[attribute]), # Add a lot more context here
+            radius = r,
+            color = "black",
+            weight = 1,
+            fill_color = fill_color,
+            fill_opacity= .4
+          )
+        )
+        self.working_data.to_crs(3347, inplace=True)
+    elif (geom_type == "Polygon") or (geom_type == "MultiPolygon"):
+      # Homemade choropleth (without legend). See here for more good examples for future reference: https://python-visualization.github.io/folium/latest/user_guide/geojson/geojson_popup_and_tooltip.html
+      self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False,        duplicates="drop")
+      scale = {0: "yellow", 1:"orange", 2: "red", 3: "brown"} # First quartile = size 8 circles, etc.
+      def styles(feature):
+        styles = {}
+        try: 
+          fill = scale[feature["properties"]["quantile"]]
+        except KeyError:
+          fill = "grey" # None / No Value
+        styles["fillColor"] = fill
+        styles["fillOpacity"] = 0.7
+        styles["lineOpacity"] = 0.2
+        return styles
+      # Temporarily reset index for matching and tooltipping
+      self.working_data.reset_index(inplace=True)
+      tooltip = folium.GeoJsonTooltip(fields=[self.index, attribute]) # Add tooltip for identifying features
+      layer = folium.GeoJson(
+          self.working_data,
+          style_function = lambda feature: styles(feature),
+          tooltip=tooltip
+        )
+      
+      features.append(layer)
+      self.working_data.set_index(self.index, inplace=True)
+    else:
+      print("This data doesn't seem to have geographic data to map")
+      
+    return features
+    
   def show_data_map(self, attribute, other_data = None, title = None):
     """
     A map symbolizing the attribute.
@@ -67,7 +132,12 @@ class Maps():
     Returns a folium.Map
     """
     this_map = folium.Map(tiles="cartodb positron")
-
+    
+    fg = folium.FeatureGroup(name=attribute)
+    features = self.get_featuregroups(attribute)
+    for feature in features:
+      fg.add_child(feature)
+    """
     geom_type = self.working_data.geometry.geom_type.mode()[0] # Use the most common geometry
     if geom_type == "Point":
       # Markers...
@@ -108,10 +178,12 @@ class Maps():
       self.working_data.set_index(self.index, inplace=True)
     else:
       print("This data doesn't seem to have geographic data to map")
-
-    # Show other data
+    """
+    # Show other data (not added to feature group)
     if other_data is not None:
       this_map = self.add_layer(other_data, this_map)
+
+    fg.add_to(this_map)
 
     # compute boundaries so that the map automatically zooms in
     bounds = this_map.get_bounds()
@@ -122,8 +194,6 @@ class Maps():
   def show_map(self, other_data = None):
     """
     A basic map illustrating the location of the data. Does not map variables of interest e.g. pollution. See instead `show_data_map()`
-
-    Contextual information can be added by specifying points and polygons
 
     self.data should be a geodataframe
     other_data should be a geodataframe or list of geodataframes
