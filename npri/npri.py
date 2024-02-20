@@ -38,22 +38,6 @@ class Maps():
   """
   A class that provides basic functions for classes with mappable data (Facilities, Places)
   """
-  features = None
-
-  def add_layer(self, other_data, this_map):
-    """
-    A helper function that adds layers (from other_data) to a folium.Map object, which it returns
-    """
-
-    try:
-      if type(other_data) == list:
-        for lyr in other_data:
-          layer = folium.GeoJson(lyr).add_to(this_map)
-      else:
-        folium.GeoJson(other_data).add_to(this_map)
-      return this_map
-    except:
-      print("Are you sure the other data are mappable geodataframes?")
 
   def style_map(self, scenario, geom_type, attribute=None):
     """
@@ -63,20 +47,21 @@ class Maps():
     features = []
 
     if geom_type == "Point":
-      # Create a clickable marker for each facility
       if scenario == "Data":
+        # Quantize data
         self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False, duplicates="drop")
         scale = {0: 8,1:12, 2: 16, 3: 24} # First quartile = size 8 circles, etc.
       # Temporarily project self.working_data for mapping purposes
       self.working_data.to_crs(4326, inplace=True)
+      # Create a clickable marker for each facility
       for idx, row in self.working_data.iterrows():
         fill_color = "orange" # Default
         r = 12 # Default
-        popup = "<h2>"+str(idx)+"</h2>"
+        popup = "<h2>"+str(idx)+"</h2>" # Default
         if scenario == "Data":
           try:
             r = scale[row["quantile"]]
-          except KeyError:
+          except KeyError: # When NAN (no records for this pollutant, e.g.)
             r = 1
             fill_color = "black"
           popup = folium.Popup(popup+"<h3>"+attribute+"</h3>"+str(row[attribute]))
@@ -95,8 +80,8 @@ class Maps():
       self.working_data.to_crs(3347, inplace=True)
       
     elif (geom_type == "Polygon") or (geom_type == "MultiPolygon"):
-      styles = {"fillColor": "blue", "fillOpacity": .2, "lineOpacity": .2, "weight": .2, "color": "black"}
-      tooltip_fields=[self.index]
+      styles = {"fillColor": "blue", "fillOpacity": .2, "lineOpacity": .2, "weight": .2, "color": "black"} # Defaults
+      tooltip_fields=[self.index] # Default
 
       if scenario == "Data":
         scale = {0: "yellow", 1:"orange", 2: "red", 3: "brown"} # First quartile = size 8 circles, etc.
@@ -140,7 +125,9 @@ class Maps():
       )
       
       features.append(layer)
-      
+
+      self.working_data.set_index(self.index, inplace=True)
+
     return features
   
   def get_features(self, attribute=None):
@@ -318,6 +305,7 @@ class Facilities(SpatialTables, Charts, Maps, Filters):
       self.data.drop("geom", axis=1, inplace=True)
       self.data = geopandas.GeoDataFrame(self.data, crs=3347)
       self.working_data = self.data.copy()
+      self.features = {} # For storing saved maps
     except:
       print("ST something went wrong")
 
@@ -339,6 +327,7 @@ class Places(SpatialTables, Charts, Maps, Filters):
       self.data.drop("geom", axis=1, inplace=True)
       self.data = geopandas.GeoDataFrame(self.data, crs=3347)
       self.working_data = self.data.copy()
+      self.features = {} # For storing saved maps
     except:
       print("ST something went wrong")
 
