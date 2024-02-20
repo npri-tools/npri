@@ -70,20 +70,22 @@ class Maps():
       # Create a clickable marker for each facility
       # Temporarily project self.working_data for mapping purposes
       self.working_data.to_crs(4326, inplace=True)
-      for index, row in self.working_data.iterrows():
+      for idx, row in self.working_data.iterrows():
         try:
           r = scale[row["quantile"]]
           fill_color = "orange"
         except KeyError:
           r = 1
           fill_color = "black"
+        print(row.index)
+        popup = folium.Popup("<h2>"+str(idx)+"</h2><h3>"+attribute+"</h3>"+str(row[attribute]))
         features.append(
           folium.CircleMarker(
             location = [row["geometry"].y, row["geometry"].x],
-            popup = attribute+": "+str(row[attribute]), # Add a lot more context here
+            popup = popup,
             radius = r,
             color = "black",
-            weight = 1,
+            weight = .2,
             fill_color = fill_color,
             fill_opacity= .4
           )
@@ -92,23 +94,9 @@ class Maps():
     elif (geom_type == "Polygon") or (geom_type == "MultiPolygon"):
       # Homemade choropleth (without legend). See here for more good examples for future reference: https://python-visualization.github.io/folium/latest/user_guide/geojson/geojson_popup_and_tooltip.html
       self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False,        duplicates="drop")
-      scale = {0: "yellow", 1:"orange", 2: "red", 3: "brown"} # First quartile = size 8 circles, etc.
-      def styles(feature):
-        styles = {}
-        try: 
-          fill = scale[feature["properties"]["quantile"]]
-        except KeyError:
-          fill = "grey" # None / No Value
-        styles["fillColor"] = fill
-        styles["fillOpacity"] = 0.7
-        styles["lineOpacity"] = 0.2
-        return styles
-      # Temporarily reset index for matching and tooltipping
-      self.working_data.reset_index(inplace=True)
-      tooltip = folium.GeoJsonTooltip(fields=[self.index, attribute]) # Add tooltip for identifying features
       layer = folium.GeoJson(
           self.working_data,
-          style_function = lambda feature: styles(feature),
+          style_function = lambda feature: self.style_map(feature),
           tooltip=tooltip
         )
       
@@ -137,48 +125,7 @@ class Maps():
     features = self.get_featuregroups(attribute)
     for feature in features:
       fg.add_child(feature)
-    """
-    geom_type = self.working_data.geometry.geom_type.mode()[0] # Use the most common geometry
-    if geom_type == "Point":
-      # Markers...
-      self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False, duplicates="drop")
-      scale = {0: 8,1:12, 2: 16, 3: 24} # First quartile = size 8 circles, etc.
-      # Add a clickable marker for each facility
-      # Temporarily project self.working_data for mapping purposes
-      self.working_data.to_crs(4326, inplace=True)
-      for index, row in self.working_data.iterrows():
-        r = scale[row["quantile"]]
-        this_map.add_child(
-          folium.CircleMarker(
-            location = [row["geometry"].y, row["geometry"].x],
-            popup = attribute+": "+str(row[attribute]),
-            radius = r,
-            color = "black",
-            weight = 1,
-            fill_color = "orange",
-            fill_opacity= .4
-          )
-        )
-        self.working_data.to_crs(3347, inplace=True)
-    elif (geom_type == "Polygon") or (geom_type == "MultiPolygon"):
-      # Choropleth
-      # Temporarily reset index for matching and tooltipping
-      self.working_data.reset_index(inplace=True)
-      layer = folium.Choropleth(
-        geo_data = self.working_data,
-        data = self.working_data,
-        key_on = "feature.properties."+self.index,
-        columns = [self.index, attribute],
-        fill_color = 'YlGnBu',
-        fill_opacity = 0.7,
-        line_opacity = 0.2,
-        legend_name = title,
-      ).add_to(this_map)
-      folium.GeoJsonTooltip(fields=[self.index, attribute]).add_to(layer.geojson) # Add tooltip for identifying features
-      self.working_data.set_index(self.index, inplace=True)
-    else:
-      print("This data doesn't seem to have geographic data to map")
-    """
+
     # Show other data (not added to feature group)
     if other_data is not None:
       this_map = self.add_layer(other_data, this_map)
