@@ -29,7 +29,7 @@ def get_data(sql, index = None):
     if index is not None:
       data.set_index(index, inplace=True)
   except:
-    print("Error: couldn't get the data...")
+    print("Error: We are unable to get the data. This may be because we've temporarily turned off the database to save money. If you'd like to keep using this tool, email enost[at]uoguelph[dot]ca to let us know!")
 
   return data
 
@@ -39,22 +39,114 @@ class Maps():
   A class that provides basic functions for classes with mappable data (Facilities, Places)
   """
 
-  def add_layer(self, other_data, this_map): #DELETEorFIX
+  def style_map(self, scenario, geom_type, attribute=None):
     """
-    A helper function that adds layers (from other_data) to a folium.Map object, which it returns
+    A function to style map features.
+    Scenarios: markers (w and w/o data), polygons (w and w/o data)
     """
+    features = []
 
-    try:
-      if type(other_data) == list:
-        for lyr in other_data:
-          layer = folium.GeoJson(lyr).add_to(this_map)
-      else:
-        folium.GeoJson(other_data).add_to(this_map)
-      return this_map
-    except:
-      print("Are you sure the other data are mappable geodataframes?")
+    if geom_type == "Point":
+      if scenario == "Data":
+        # Quantize data
+        self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False, duplicates="drop")
+        scale = {0: 8,1:12, 2: 16, 3: 24} # First quartile = size 8 circles, etc.
+      # Temporarily project self.working_data for mapping purposes
+      self.working_data.to_crs(4326, inplace=True)
+      # Create a clickable marker for each facility
+      for idx, row in self.working_data.iterrows():
+        fill_color = "orange" # Default
+        r = 12 # Default
+        popup = "<h2>"+str(idx)+"</h2>" # Default
+        if scenario == "Data":
+          try:
+            r = scale[row["quantile"]]
+          except KeyError: # When NAN (no records for this pollutant, e.g.)
+            r = 1
+            fill_color = "black"
+          popup = folium.Popup(popup+"<h3>"+attribute+"</h3>"+str(row[attribute]))
+        
+        features.append(
+          folium.CircleMarker(
+            location = [row["geometry"].y, row["geometry"].x],
+            popup = popup,
+            radius = r,
+            color = "black",
+            weight = .2,
+            fill_color = fill_color,
+            fill_opacity= .4
+          )
+        )
+      self.working_data.to_crs(3347, inplace=True)
+      
+    elif (geom_type == "Polygon") or (geom_type == "MultiPolygon"):
+      styles = {"fillColor": "blue", "fillOpacity": .2, "lineOpacity": .2, "weight": .2, "color": "black"} # Defaults
+      tooltip_fields=[self.index] # Default
 
-  def show_data_map(self, attribute, other_data = None, title = None):
+      if scenario == "Data":
+        scale = {0: "yellow", 1:"orange", 2: "red", 3: "brown"} # First quartile = size 8 circles, etc.
+        self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False, duplicates="drop")
+        tooltip_fields.append(attribute)
+
+      def choropleth(feature):
+        this_style = styles
+        if scenario == "Data":
+          try: 
+            fill = scale[feature["properties"]["quantile"]]
+          except KeyError:
+            fill = "white" # None / No Value
+          this_style["fillColor"] = fill
+          this_style["fillOpacity"] = 0.7
+        else:
+          this_style = styles
+        return this_style
+      
+      # Temporarily reset index for matching and tooltipping
+      self.working_data.reset_index(inplace=True)
+      tooltip = folium.GeoJsonTooltip(
+        fields = tooltip_fields,
+        #aliases=["State:", "2015 Median Income(USD):", "Median % Change:"],
+        localize=True,
+        sticky=False,
+        labels=True,
+        style="""
+            background-color: #F0EFEF;
+            border: 2px solid black;
+            border-radius: 3px;
+            box-shadow: 3px;
+        """,
+        max_width=800,
+      ) # Add tooltip for identifying features
+      
+      layer = folium.GeoJson(
+        self.working_data,
+        tooltip = tooltip,
+        style_function = lambda feature: choropleth(feature)
+      )
+      
+      features.append(layer)
+
+      self.working_data.set_index(self.index, inplace=True)
+
+    return features
+  
+  def get_features(self, attribute=None):
+    """
+    Creates a list of markers or polygons to be added to a FeatureGroup.
+    Useful intermediary for show_map and also for Streamlit dashboards, which directly use FeatureGroups.
+    """
+    geom_type = self.working_data.geometry.geom_type.mode()[0] # Use the most common geometry
+
+    scenario = "Reference"
+    if attribute is not None:
+      scenario = "Data"
+      
+    features = self.style_map(scenario=scenario, geom_type=geom_type, attribute=attribute)
+    self.features[attribute] = features
+
+    return features
+    
+  def show_map(self, attribute=None, other_data = None):
     """
     A map symbolizing the attribute.
 
@@ -67,93 +159,25 @@ class Maps():
     Returns a folium.Map
     """
     this_map = folium.Map(tiles="cartodb positron")
+    
+    # Set up FeatureGroup
+    fg = folium.FeatureGroup(name=attribute)
+    features = self.get_features(attribute) # If attribute is none, then reference (show_map)
+    for feature in features:
+      fg.add_child(feature)
 
-    geom_type = self.working_data.geometry.geom_type.mode()[0] # Use the most common geometry
-    if geom_type == "Point":
-      # Markers...
-      self.working_data['quantile'] = pandas.qcut(self.working_data[attribute], 4, labels=False, duplicates="drop")
-      scale = {0: 8,1:12, 2: 16, 3: 24} # First quartile = size 8 circles, etc.
-      # Add a clickable marker for each facility
-      # Temporarily project self.working_data for mapping purposes
-      self.working_data.to_crs(4326, inplace=True)
-      for index, row in self.working_data.iterrows():
-        r = scale[row["quantile"]]
-        this_map.add_child(
-          folium.CircleMarker(
-            location = [row["geometry"].y, row["geometry"].x],
-            popup = attribute+": "+str(row[attribute]),
-            radius = r,
-            color = "black",
-            weight = 1,
-            fill_color = "orange",
-            fill_opacity= .4
-          )
-        )
-        self.working_data.to_crs(3347, inplace=True)
-    elif (geom_type == "Polygon") or (geom_type == "MultiPolygon"):
-      # Choropleth
-      # Temporarily reset index for matching and tooltipping
-      self.working_data.reset_index(inplace=True)
-      layer = folium.Choropleth(
-        geo_data = self.working_data,
-        data = self.working_data,
-        key_on = "feature.properties."+self.index,
-        columns = [self.index, attribute],
-        fill_color = 'YlGnBu',
-        fill_opacity = 0.7,
-        line_opacity = 0.2,
-        legend_name = title,
-      ).add_to(this_map)
-      folium.GeoJsonTooltip(fields=[self.index, attribute]).add_to(layer.geojson) # Add tooltip for identifying features
-      self.working_data.set_index(self.index, inplace=True)
-    else:
-      print("This data doesn't seem to have geographic data to map")
-
-    # Show other data
+    # Show other data (should be a self.features...)
     if other_data is not None:
-      this_map = self.add_layer(other_data, this_map)
+      for feature in other_data:
+        fg.add_child(feature)
+    fg.add_to(this_map)
 
     # compute boundaries so that the map automatically zooms in
     bounds = this_map.get_bounds()
     this_map.fit_bounds(bounds, padding=0)
 
     return this_map
-
-  def show_map(self, other_data = None):
-    """
-    A basic map illustrating the location of the data. Does not map variables of interest e.g. pollution. See instead `show_data_map()`
-
-    Contextual information can be added by specifying points and polygons
-
-    self.data should be a geodataframe
-    other_data should be a geodataframe or list of geodataframes
-
-    Returns a folium.Map
-    """
-    this_map = folium.Map(tiles="cartodb positron")
-
-    # Test whether data has geometry. Not all views will?
-    try:
-      self.working_data.reset_index(inplace=True)
-      layer = folium.GeoJson(
-        self.working_data,
-        #style_function = lambda x: map_style['other']
-      ).add_to(this_map)
-      folium.GeoJsonTooltip(fields=[self.index]).add_to(layer) # Add tooltip for identifying features
-      self.working_data.set_index(self.index, inplace=True)
-    except:
-      print("This data doesn't seem to have geographic data to map")
-
-    # Show other data
-    if other_data is not None:
-      this_map = self.add_layer(other_data, this_map)
-
-    # compute boundaries so that the map automatically zooms in
-    bounds = this_map.get_bounds()
-    this_map.fit_bounds(bounds, padding=0)
-
-    return this_map
-
+  
 
 class Charts():
   def show_bar_chart(self, attribute=None, title=None):
@@ -281,6 +305,7 @@ class Facilities(SpatialTables, Charts, Maps, Filters):
       self.data.drop("geom", axis=1, inplace=True)
       self.data = geopandas.GeoDataFrame(self.data, crs=3347)
       self.working_data = self.data.copy()
+      self.features = {} # For storing saved maps
     except:
       print("ST something went wrong")
 
@@ -302,6 +327,7 @@ class Places(SpatialTables, Charts, Maps, Filters):
       self.data.drop("geom", axis=1, inplace=True)
       self.data = geopandas.GeoDataFrame(self.data, crs=3347)
       self.working_data = self.data.copy()
+      self.features = {} # For storing saved maps
     except:
       print("ST something went wrong")
 
