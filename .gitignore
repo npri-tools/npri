@@ -2,3 +2,4 @@
 .DS_Store
 *.pyc
 tests.ipynb
+.ipynb_checkpoints/tests-checkpoint.ipynb
