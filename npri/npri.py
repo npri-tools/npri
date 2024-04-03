@@ -11,7 +11,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # NPRI
 def get_npri_data(view, endpoint, params=None, sql=None, index=None): # Gets data using sql query or url
   # Get the filter and its values
-  print(view, endpoint, params, sql, index)
+  #print(view, endpoint, params, sql, index) # Debugging
 
   if endpoint == "sql":
     sql = urllib.parse.quote_plus(sql)
@@ -20,7 +20,7 @@ def get_npri_data(view, endpoint, params=None, sql=None, index=None): # Gets dat
   else:
     url = 'https://hello-world-1-ixcan5eepa-uc.a.run.app/api/data/'+view+'/'+params
     report_url = 'https://hello-world-1-ixcan5eepa-uc.a.run.app/api/report/'+view+'/'+params
-  print("getting data: ", url, report_url)
+  #print("getting data: ", url, report_url) # Debugging
   data = None
   try:
     data =pandas.read_json(url) #sqlize(view,params) # for testing on colab, just directly sqlize sqlize(view,params) / otherwise use url
@@ -65,10 +65,11 @@ class Maps():
   A class that provides basic functions for classes with mappable data (Facilities, Places)
   """
 
-  def style_map(self, scenario, geom_type, attribute=None):
+  def style_map(self, scenario, geom_type, attribute=None, title=None):
     """
     A function to style map features.
     Scenarios: markers (w and w/o data), polygons (w and w/o data)
+    title TBD
     """
     features = []
 
@@ -172,7 +173,7 @@ class Maps():
 
     return features
 
-  def show_map(self, attribute=None, other_data = None):
+  def show_map(self, attribute=None, other_data=None, title=None):
     """
     A map symbolizing the attribute.
 
@@ -181,6 +182,8 @@ class Maps():
     attribute should be a column in the geodataframe self.data
     self.data should be a geodataframe
     other_data should be a geodataframe or list of geodataframes
+
+    title = TBD
 
     Returns a folium.Map
     """
@@ -222,13 +225,13 @@ class Facilities(Charts, Maps):
 
     args = locals()
     del args["self"] # remove self
-    print(args)
+    #print(args) # Debugging
     params = parameterize(args)
-    print(params)
+    #print(params) # Debugging
 
     try:
       self.data, self.url, self.report_url = get_npri_data(view="facilities", endpoint="api", params=params, index=self.index) # Go to Flask
-      print("final url: ", self.url)
+      print("final url: ", self.url, "report: ", self.report_url)
       self.data['geometry'] = geopandas.GeoSeries.from_wkb(self.data['geom'])
       self.data.drop("geom", axis=1, inplace=True)
       self.data = geopandas.GeoDataFrame(self.data, crs=3347)
@@ -249,13 +252,13 @@ class Places(Charts, Maps):
 
     args = locals()
     del args["self"] # remove self
-    print(args)
+    #print(args) # Debugging
     params = parameterize(args)
-    print(params)
+    #print(params) # Debugging
 
     try:
       self.data, self.url, self.report_url = get_npri_data(view="places", endpoint="api", params=params, index=self.index)
-      print("final url: ", self.url)
+      print("final url: ", self.url, "report: ", self.report_url)
       self.data['geometry'] = geopandas.GeoSeries.from_wkb(self.data['geom'])
       self.data.drop("geom", axis=1, inplace=True)
       self.data = geopandas.GeoDataFrame(self.data, crs=3347)
@@ -273,13 +276,13 @@ class Companies(Charts):
 
     args = locals()
     del args["self"] # remove self
-    print(args)
+    #print(args) # Debugging
     params = parameterize(args)
-    print(params)
+    #print(params) # Debugging
 
     try:
       self.data, self.url, self.report_url = get_npri_data(view="company", endpoint="api", params=params, index=self.index)
-      print("final url: ", self.url)
+      print("final url: ", self.url, "report: ", self.report_url)
       self.working_data = self.data.copy()
     except:
       print("Error") # Convert to error
@@ -288,18 +291,18 @@ class Substances(Charts):
   """
   A view from companies
   """
-  def __init__(self, pollutant):
+  def __init__(self, pollutants):
     self.index = "Substance"
 
     args = locals()
     del args["self"] # remove self
-    print(args)
+    #print(args) # Debugging
     params = parameterize(args)
-    print(params)
+    #print(params) # Debugging
 
     try:
       self.data, self.url, self.report_url = get_npri_data(view="substance", endpoint="api", params=params, index=self.index)
-      print("final url: ", self.url)
+      print("final url: ", self.url, "report: ", self.report_url)
       self.working_data = self.data.copy()
     except:
       print("Error") # Convert to error
@@ -313,13 +316,13 @@ class Industries(Charts):
 
     args = locals()
     del args["self"] # remove self
-    print(args)
+    #print(args) # Debugging
     params = parameterize(args)
-    print(params)
+    #print(params) # Debugging
 
     try:
       self.data, self.url, self.report_url = get_npri_data(view="industry", endpoint="api", params=params, index=self.index)
-      print("final url: ", self.url)
+      print("final url: ", self.url, "report: ", self.report_url)
       self.working_data = self.data.copy()
     except:
       print("Error") # Convert to error
@@ -334,16 +337,16 @@ class Times(Charts):
     
     args = locals()
     del args["self"], args["view"] # remove self and in the case of Times, the view
-    print(args)
+    #print(args) # Debugging
     params = parameterize(args)
-    print(params)
+    #print(params) # Debugging
 
     indexes = {"time_company": 'CompanyID',"time_place": 'DA', "time_substance": 'Substance'} # How to avoid duplicating this?
     self.index = indexes[view]
 
     try:
       self.data, self.url, self.report_url = get_npri_data(view=view, endpoint="api", params=params, index=self.index) #
-      print("final url: ", self.url)
+      print("final url: ", self.url, "report: ", self.report_url)
       self.working_data = self.data.copy()
     except:
       print("Error") # Convert to error
