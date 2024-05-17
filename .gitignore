@@ -3,3 +3,4 @@
 *.pyc
 tests.ipynb
 .ipynb_checkpoints/tests-checkpoint.ipynb
+.ipynb_checkpoints/npri_v0_0_2_Tutorial-checkpoint.ipynb
