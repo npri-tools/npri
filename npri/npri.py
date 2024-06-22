@@ -37,7 +37,10 @@ def parameterize(args):
     if v is not None:
       params += k + "="
       for val in v:
-        params += str(val).strip(" ") + ","
+        if (k == "substances") & (" " in str(val)):
+          params += str(val).replace(' ', '%') + ","
+        else:
+          params += str(val).strip(" ") + ","
       params = params[:-1] # remove trailing ,
       params += ";"
   params = params[:-1] # remove trailing ;
