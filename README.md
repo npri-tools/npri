@@ -1,4 +1,4 @@
-## `npri` v0.0.2 Tutorial
+## `npri` v0.0.3
 
 A Python package providing easy-to-use code that returns recently reported emissions from facilities, socio-economic information for places, emissions records for specific companies and industries, and emissions trends over time.
 
@@ -6,7 +6,7 @@ A Python package providing easy-to-use code that returns recently reported emiss
 Dr. Ingrid Waldron [defines](https://en.ccunesco.ca/-/media/Files/Unesco/Resources/2020/07/EnvironmentalRacismCanada.pdf) environmental racism as "environmental policies, practices, or directives that disproportionately
 disadvantage individuals, groups, or communities (intentionally or unintentionally) based on race or colour definition." The outcomes of environmental racism include inequitable access to environmental goods such as clean drinking water, unfair distribution of environmental harms such as air pollution, and uneven access to legal and other mechanisms that would address these. As Waldron notes, environmental racism "compounds other existing inequalities and challenges that Indigenous and other racialized groups face, such as low-income and poverty, underemployment and unemployment, food insecurity, poor access to healthcare, among others."
 
-As of February 2024, Bill C-226 is under consideration in committee in Canada's Senate. Among other things, the Bill [proposes](https://www.parl.ca/DocumentViewer/en/44-1/bill/C-226/third-reading) addressing environmental racism through "a study that includes (i) an examination of the link between race, socio-economic status and environmental risk, and (ii) information and statistics relating to the location of environmental hazards."
+As of June 2024, Bill C-226 has been approved by Canada's Senate. Among other things, the Bill [requires](https://www.parl.ca/DocumentViewer/en/44-1/bill/C-226/third-reading) addressing environmental racism through "a study that includes (i) an examination of the link between race, socio-economic status and environmental risk, and (ii) information and statistics relating to the location of environmental hazards."
 
 npri-tools contributes to this work by prototyping what the data infrastructure for it might look like.
 
