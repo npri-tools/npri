@@ -250,7 +250,7 @@ class Places(Charts, Maps):
   TODO: add basic info like province to npri_screen
   string of province
   """
-  def __init__(self, ids=None, near=None, across=None):
+  def __init__(self, ids=None, near=None, across=None, place=None):
     self.index = "dauid"
 
     args = locals()
