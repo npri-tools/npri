@@ -222,10 +222,11 @@ class Facilities(Charts, Maps):
   across -- list of strings of provinces
   substances -- list of substances
   bounds -- list of [[NW], [SE]] coords - xmin, ymin, xmax, ymax
+  within -- list of DAUIDs like [24370159, 24370160, 24370161]
   sql -- a sql query
   attributes -- True, returns all fields from the table. Otherwise, a list of column names like ["geom"]
   """
-  def __init__(self, ids=None, near=None, place=None, across=None, substances=None, bounds=None, sql=None, attributes=None): #
+  def __init__(self, ids=None, near=None, place=None, across=None, substances=None, bounds=None, within=None, sql=None, attributes=None): #
     self.index = "NpriID"
 
     args = locals()
