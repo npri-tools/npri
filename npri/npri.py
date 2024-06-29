@@ -71,8 +71,10 @@ class Maps():
   def style_map(self, scenario, geom_type, attribute=None, title=None):
     """
     A function to style map features.
-    Scenarios: markers (w and w/o data), polygons (w and w/o data)
-    title TBD
+    scenarios -- str: Data
+    geom_type -- str: Point or Polygon or Multipolygon
+    attribute -- str: column name
+    title -- str: title of the map
     """
     features = []
 
@@ -217,7 +219,7 @@ class Facilities(Charts, Maps):
   ids -- list of NPRI_IDs like [1, 15, 2412]
   near -- list of lat,lng like [lat,lng]
   place -- list of FSA(s) to match facilities on like ['N1E', 'N1H']
-  across -- string of province
+  across -- list of strings of provinces
   substances -- list of substances
   bounds -- list of [[NW], [SE]] coords - xmin, ymin, xmax, ymax
   sql -- a sql query
@@ -246,9 +248,10 @@ class Facilities(Charts, Maps):
 class Places(Charts, Maps):
   """
   A view from regions (DA, CSD, CD, Province/Territory, Canada)
-
-  TODO: add basic info like province to npri_screen
-  string of province
+  ids -- list of Census DAUIDs like [1, 15, 2412]
+  near -- list of lat,lng like [lat,lng]
+  across -- list of strings of provinces
+  place -- list of FSA(s) to match DAs on like ['N1E', 'N1H']
   """
   def __init__(self, ids=None, near=None, across=None, place=None):
     self.index = "dauid"
